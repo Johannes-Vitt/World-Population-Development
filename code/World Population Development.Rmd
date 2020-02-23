@@ -4,13 +4,35 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+#set the working directory when working in RStudio (see https://stackoverflow.com/questions/13672720/r-command-for-setting-working-directory-to-source-file-location-in-rstudio)
+# the following command needs to be commented out before hitting "knit"
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+# uncomment the following to set the working directory when executing the r code
+#setwd(getSrcDirectory()[1])
+
+# import the required libraries
+library(data.table)
+library(ggplot2)
+library(magrittr)
+library(tidyr)
+library(plotly)
+library(GGally)
 ```
 
-## R Markdown
+## Import Data
 
 
 ```{r data import}
+dt_population <- readxl::read_excel("../data/WPP2019_POP_F01_1_TOTAL_POPULATION_BOTH_SEXES.xlsx", sheet = 1) %>% as.data.table
+clean_dt<- dt_population[Type=="Country/Area"]
+years <- sprintf("%d",seq(from=1950, to=2020))
+clean_dt <- clean_dt %>% data.table::melt( measure.vars=years, variable.name="year", value.name="population")
+clean_dt <- clean_dt[, population:=as.numeric(population)]
+clean_dt[,sum(population), by=year]
+```
 
+
+```{r data import}
+1:10
 ```
 
