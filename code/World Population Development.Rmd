@@ -1,12 +1,14 @@
 ---
 title: "World Population Development"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 #set the working directory when working in RStudio (see https://stackoverflow.com/questions/13672720/r-command-for-setting-working-directory-to-source-file-location-in-rstudio)
 # the following command needs to be commented out before hitting "knit"
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 # uncomment the following to set the working directory when executing the r code
 #setwd(getSrcDirectory()[1])
 
@@ -17,22 +19,69 @@ library(magrittr)
 library(tidyr)
 library(plotly)
 library(GGally)
+library(RColorBrewer)
 ```
 
-## Import Data
-
-
-```{r data import}
+# Data
+This case study is based on the population development data of the United Nations Department of Economics and Social Affairs. It can be found [here](https://population.un.org/wpp/Download/Standard/Population/). The population data is provided by country, geographic region, SDG (Substainable Development Goals) region, income group (World Bank income groups) and development group (UN development groups). One sheet of the excel file contains the historic estimates from 1950 until 2020. There are multiple prediction sheets for different scenarios (e.g. low, medium, high, constant-fertility, zero-migration). This report will use the medium variant predicitons.
+```{r echo=FALSE,warning=FALSE}
 dt_population <- readxl::read_excel("../data/WPP2019_POP_F01_1_TOTAL_POPULATION_BOTH_SEXES.xlsx", sheet = 1) %>% as.data.table
-clean_dt<- dt_population[Type=="Country/Area"]
 years <- sprintf("%d",seq(from=1950, to=2020))
-clean_dt <- clean_dt %>% data.table::melt( measure.vars=years, variable.name="year", value.name="population")
+clean_dt <- dt_population %>% data.table::melt( measure.vars=years, variable.name="year", value.name="population")
 clean_dt <- clean_dt[, population:=as.numeric(population)]
-clean_dt[,sum(population), by=year]
+
+```
+# Historic Population Development of the World 
+## Population by Region
+In the past seventy years the majority share of the population of the world was always held by Asia. The share of the regions Asia, Latin America and the Carribean and North America was roughly constant over the period. Africa's share increased while Europe's share decreased. 
+
+
+```{r echo=FALSE,warning=FALSE}
+world_population_historic<- clean_dt[Type=="Region"]
+world_population_historic <- world_population_historic[,year :=as.numeric(levels(year)[year])]
+ggplot(data = world_population_historic, aes(x=year, y=population, fill=Name))  + geom_bar(stat="identity") + labs(title= "World Population by Region 1950-2020",x="Year", y="World Population (thousands)",fill = "Regions")
+ggplot(data = world_population_historic, aes(x=year, y=population, fill=Name))  + geom_bar(position="fill",stat="identity") + labs(title= "Regional Share of World Population 1950-2020",x="Year", y="Share of World Population (%)", fill = "Regions")
+
 ```
 
+## Historic Population Growth in the World
+The total population growth (e.g. difference of the population between the past year and the current year) of the world reached its peak in the late 1980s. Another peak was in the mid 2010s.
 
-```{r data import}
-1:10
+```{r echo=FALSE,warning=FALSE}
+world_population_historic<- clean_dt[Type=="Country/Area"]
+world_population_historic <- world_population_historic[,sum(population), by=year]
+world_population_historic <- world_population_historic[,growth:= V1 - shift(V1)]
+world_population_historic <- world_population_historic[,year :=as.numeric(levels(year))]
+ggplot(data = world_population_historic, aes(x=year, y=growth))  + geom_line() + labs(title= "Historic Population Growth in the World 1950-2020",x="Year", y="Population Growth (thousands)")
+
 ```
 
+## Population Growth in the World by Region
+When looking at the population growth by region it becomes apparent that most of the historic population growth stems from Asia. However, the growth in Asia has been slowing since its peak in the 1980s. At the same time the growth in Africa is increasing and if the current trend continues it will surpass Asia. It is also interesting to note that Europe is the only region where the population has been shrinking (depicted by negative growth) for a period in the late 1990s. 
+```{r echo=FALSE,warning=FALSE}
+world_population_historic<- clean_dt[Type=="Region"]
+world_population_historic <- world_population_historic[,year :=as.numeric(levels(year)[year])]
+world_population_historic <- world_population_historic[,growth:= population - shift(population), by=Name]
+ggplot(data = world_population_historic, aes(x=year, y=growth))  + geom_line(aes(color=Name)) + labs(title= "Population Growth in the World by Region 1950-2020",x="Year", y="Population Growth (thousands)", fill = "Regions")
+```
+## Population Growth Trend by Region
+While the growth metric can be mathematically seen as the first derivaive of the population, the growth trend is the second derivative. It measures the difference between the growth of the current year and the last year. When looking at the plot of the growth trend it becomes appearent that Africa is the only region with a constant positive growth trend.
+```{r echo=FALSE,warning=FALSE}
+world_population_historic<- clean_dt[Type=="Region"]
+world_population_historic <- world_population_historic[,year :=as.numeric(levels(year)[year])]
+world_population_historic <- world_population_historic[,growth:= population - shift(population), by=Name]
+world_population_historic <- world_population_historic[,growth_trend:= growth - shift(growth), by=Name]
+ggplot(data = world_population_historic, aes(x=year, y=growth_trend))  + geom_line(aes(color=Name)) + labs(title= "Population Growth Trend by Region 1950-2020",x="Year", y="Population Growth Trend (thousands)", color = "Regions")
+```
+
+## Population Growth Share by SDG Region
+In order to have a better understanding of the differences in the share of growth it is interesting to consider the growth by SDG regions instead of geographic regions. The SDG regions are more culturally and economically homogeneous than the simple geographic regions. 
+
+
+```{r echo=FALSE,warning=FALSE}
+world_population_historic<- clean_dt[Type=="SDG region"]
+world_population_historic <- world_population_historic[,year :=as.numeric(levels(year)[year])]
+world_population_historic <- world_population_historic[,growth:= population - shift(population), by=Name]
+ggplot(data = world_population_historic, aes(x=year, y=growth, fill=Name))  + geom_area(position="fill",stat="identity") + scale_fill_brewer(palette = "Set2") + labs(title= "Population Growth Share by SDG Region 1950-2020",x="Year", y="Share of Population Growth (%)", fill = "SDG Regions")
+
+```
