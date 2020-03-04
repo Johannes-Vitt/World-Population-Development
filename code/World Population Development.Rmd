@@ -85,3 +85,40 @@ world_population_historic <- world_population_historic[,growth:= population - sh
 ggplot(data = world_population_historic, aes(x=year, y=growth, fill=Name))  + geom_area(position="fill",stat="identity") + scale_fill_brewer(palette = "Set2") + labs(title= "Population Growth Share by SDG Region 1950-2020",x="Year", y="Share of Population Growth (%)", fill = "SDG Regions")
 
 ```
+
+## Predicted World Population by Region 2020-2100
+
+```{r echo=FALSE,warning=FALSE}
+dt_population <- readxl::read_excel("../data/WPP2019_POP_F01_1_TOTAL_POPULATION_BOTH_SEXES.xlsx", sheet = 2) %>% as.data.table
+years <- sprintf("%d",seq(from=2020, to=2100))
+clean_dt <- dt_population %>% data.table::melt( measure.vars=years, variable.name="year", value.name="population")
+clean_prediction_dt <- clean_dt[, population:=as.numeric(population)]
+
+```
+The population of Africa will be growing more rapidly than the population of Asia. In the 2050s Asia is expected to reach a peak of its population. After this date the population will start to decline. Africas share of the world population will be almost the value of Asia by 2100. 
+```{r echo=FALSE,warning=FALSE}
+world_population_prediction<- clean_prediction_dt[Type=="Region"]
+world_population_prediction <- world_population_prediction[,year :=as.numeric(levels(year)[year])]
+ggplot(data = world_population_prediction, aes(x=year, y=population, fill=Name))  + geom_bar(stat="identity") + labs(title= "Predicted World Population by Region 2020-2100",x="Year", y="World Population (thousands)", fill = "Regions")
+
+```
+## Predicted Total World Population Growth 2020-2100
+The total population growth of the world is expected to fall continously from its current value of roughly 80 million people per year to almost zero by the year 2100. This is the population developemnt of the whole world combined.
+```{r echo=FALSE,warning=FALSE}
+world_population_prediction<- clean_prediction_dt[Type=="Country/Area"]
+world_population_prediction <- world_population_prediction[,sum(population), by=year]
+world_population_prediction <- world_population_prediction[,growth:= V1 - shift(V1)]
+world_population_prediction <- world_population_prediction[,year :=as.numeric(levels(year))]
+ggplot(data = world_population_prediction, aes(x=year, y=growth))  + geom_line() + scale_x_continuous(name="Year") + labs(title= "Predicted Population Growth in the World 1950-2020",x="Year", y="Population Growth (thousands)")
+
+```
+
+## Predicted  World Population Development by Region 2020-2100
+Once again, the change of the Asia region from a region with positive population development to a region with a negative population development in the 2050s becomes clear. Africa and North America will be only Regions with a significant positive population development, where Africa is responsible for the majority of the growth.
+```{r echo=FALSE,warning=FALSE}
+world_population_prediction<- clean_prediction_dt[Type=="Region"]
+world_population_prediction <- world_population_prediction[,year :=as.numeric(levels(year)[year])]
+world_population_prediction <- world_population_prediction[,growth:= population - shift(population), by=Name]
+ggplot(data = world_population_prediction, aes(x=year, y=growth, fill=Name))  + geom_bar(stat="identity") + labs(title= "Predicted  World Population Development by Region 2020-2100",x="Year", y="Population Growth (thousands)", fill = "Regions")
+
+```
