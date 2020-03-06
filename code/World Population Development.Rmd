@@ -20,6 +20,7 @@ library(tidyr)
 library(plotly)
 library(GGally)
 library(RColorBrewer)
+library(forcats)
 ```
 
 # Data
@@ -120,5 +121,65 @@ world_population_prediction<- clean_prediction_dt[Type=="Region"]
 world_population_prediction <- world_population_prediction[,year :=as.numeric(levels(year)[year])]
 world_population_prediction <- world_population_prediction[,growth:= population - shift(population), by=Name]
 ggplot(data = world_population_prediction, aes(x=year, y=growth, fill=Name))  + geom_bar(stat="identity") + labs(title= "Predicted  World Population Development by Region 2020-2100",x="Year", y="Population Growth (thousands)", fill = "Regions")
+
+```
+
+## Predicted African Population by Regions 2020-2100
+Eastern and Western Africa are today by far the most populated Regions in Africa. This trend will continue all the way until 2100 when both regions will have a population of 1.5 billion people each. Middle Africa starts out with a lower population today and also has a less growth. However, it is still expected to be the third populous African region by 2100 with 750 million inhabitants. Northern Africa is expected to have a slower growth and have a population of 500 million people, while Southern Africa will fail to make up a significant part of the overall African population.
+In the following parts of this case study I will focus on the three most populated Regions in 2100: Eastern, Western and Middle Africa.
+
+```{r echo=FALSE,warning=FALSE}
+world_population_prediction<- clean_prediction_dt[`Parent code`=="947" | Name=="Northern Africa"]
+world_population_prediction <- world_population_prediction[,year :=as.numeric(levels(year)[year])]
+ggplot(data = world_population_prediction, aes(x=year, y=population))  + geom_line(aes(color=Name)) + labs(title= "Population Growth in the World by Region 1950-2020",x="Year", y="Population Growth (thousands)", color = "Regions")
+```
+
+## Eastern Africa
+### Population Overview 2020
+Eastern Africa is made up by 20 different countries. Ethiopoa, Tanzania, Kenya and Uganda have the largest population in 2020. The following table displays the population of all East African nations in 2020: 
+```{r echo=FALSE,warning=FALSE}
+eastern_africa_countries <- clean_prediction_dt[`Parent code`=="910"]
+eastern_africa_countries_2020 <- eastern_africa_countries[year=="2020"]
+eastern_africa_countries_2020 %>%
+  mutate(Name = fct_reorder(Name, population)) %>%
+ggplot(aes(x=reorder(Name,population), y=population)) +
+  geom_segment( aes(x=Name, xend=Name, y=0, yend=population), color="skyblue") +
+  geom_point( color="blue", size=4, alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  ) + labs(title= "Population Prediction Eastern Africa by Country 2020",x="Country", y="Population (millions)") + scale_y_continuous(limits=c(0, 300))
+```
+### Population Overview 2100
+By 2100 the population of Ethopia and Tanzania is expected to reach almost 300 million people for each country. The following table displays the population of all East African nations 2100 in million inhabitants: 
+```{r echo=FALSE,warning=FALSE}
+eastern_africa_countries_2100 <- clean_prediction_dt[`Parent code`=="910" & year=="2100"]
+eastern_africa_countries_2100 %>%
+  mutate(Name = fct_reorder(Name, population)) %>%
+ggplot(aes(x=reorder(Name,population), y=population)) +
+  geom_segment( aes(x=Name, xend=Name, y=0, yend=population), color="skyblue") +
+  geom_point( color="blue", size=4, alpha=0.6) +
+  theme_light() +
+  coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  ) + labs(title= "Population Prediction Eastern Africa by Country 2100",x="Country", y="Population (millions)")
+
+```
+When looking at the population of Eastern Africa on a map three major zones of population are visible: a northern one in Ethiopia [(see map)](https://luminocity3d.org/WorldPopDen/#6/11.340/39.001). A central one around Lake Victoria [(see map)](https://luminocity3d.org/WorldPopDen/#6/-1.219/34.080). And a southern one around Lake Malawi [(see map)](https://luminocity3d.org/WorldPopDen/#7/-12.120/34.003). There are also smaller population hubs along the coast of the Indian Ocean.
+```{r echo=FALSE,warning=FALSE}
+population_nothern_zone_2020 <- eastern_africa_countries[Name=="Ethiopia" & year==2020, population]
+population_nothern_zone_2100 <- eastern_africa_countries[Name=="Ethiopia" & year==2100, population]
+population_central_zone_2020 <- eastern_africa_countries[(Name=="Kenya" | Name=="Uganda" | Name=="United Republic of Tanzania" | Name=="Rwanda" | Name=="Burundi") & year==2020, sum(population)]
+population_central_zone_2100 <- eastern_africa_countries[(Name=="Kenya" | Name=="Uganda" | Name=="United Republic of Tanzania" | Name=="Rwanda" | Name=="Burundi") & year==2100, sum(population)]
+population_southern_zone_2020 <- eastern_africa_countries[(Name=="Malawi" | Name=="Zimbadwe" | Name=="United Republic of Tanzania" | Name=="Zambia") & year==2020, sum(population)]
+population_southern_zone_2100 <- eastern_africa_countries[(Name=="Malawi" | Name== "Mozambique" | Name=="Zimbadwe" | Name=="United Republic of Tanzania" | Name=="Zambia") & year==2100, sum(population)]
+
+data.table("2020" = c(population_nothern_zone_2020, population_central_zone_2020, population_southern_zone_2020), "2100" = c(population_nothern_zone_2100, population_central_zone_2100, population_southern_zone_2100))
 
 ```
